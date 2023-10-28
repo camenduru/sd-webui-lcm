@@ -3,7 +3,7 @@ from diffusers import DiffusionPipeline, AutoencoderKL, UNet2DConditionModel
 from transformers import CLIPTokenizer, CLIPTextModel, CLIPImageProcessor
 from diffusers.pipelines.stable_diffusion import StableDiffusionPipelineOutput
 from diffusers.image_processor import VaeImageProcessor
-import modules.shared
+# import modules.shared
 from typing import List, Optional, Union, Dict, Any
 
 from diffusers import logging

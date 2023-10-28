@@ -6,9 +6,9 @@ from lcm.lcm_scheduler import LCMScheduler
 from lcm.lcm_pipeline import LatentConsistencyModelPipeline
 from lcm.lcm_i2i_pipeline import LatentConsistencyModelImg2ImgPipeline
 from diffusers.image_processor import PipelineImageInput
-import modules.scripts as scripts
-import modules.shared
-from modules import script_callbacks
+# import modules.scripts as scripts
+# import modules.shared
+# from modules import script_callbacks
 import os
 import random
 import time
@@ -26,20 +26,6 @@ MAX_SEED = np.iinfo(np.int32).max
 MAX_IMAGE_SIZE = int(os.getenv("MAX_IMAGE_SIZE", "768"))
 
 
-class Script(scripts.Script):
-    def __init__(self) -> None:
-        super().__init__()
-
-    def title(self):
-        return "LCM"
-
-    def show(self, is_img2img):
-        return scripts.AlwaysVisible
-
-    def ui(self, is_img2img):
-        return ()
-
-
 def randomize_seed_fn(seed: int, randomize_seed: bool) -> int:
     if randomize_seed:
         seed = random.randint(0, MAX_SEED)
@@ -47,7 +33,7 @@ def randomize_seed_fn(seed: int, randomize_seed: bool) -> int:
 
 
 def save_image(img, metadata: dict):
-    save_dir = os.path.join(scripts.basedir(), "outputs/txt2img-images/LCM/")
+    save_dir = '/content/outputs/LCM-txt2img/'
     Path(save_dir).mkdir(exist_ok=True, parents=True)
     seed = metadata["seed"]
     unique_id = uuid.uuid4()
@@ -87,7 +73,7 @@ def generate(
     seed = randomize_seed_fn(seed, randomize_seed)
     torch.manual_seed(seed)
 
-    selected_device = modules.shared.device
+    selected_device = 'cuda'
     if use_cpu:
         selected_device = "cpu"
         if use_fp16:
@@ -147,7 +133,7 @@ def generate_i2i(
     seed = randomize_seed_fn(seed, randomize_seed)
     torch.manual_seed(seed)
 
-    selected_device = modules.shared.device
+    selected_device = 'cuda'
     if use_cpu:
         selected_device = "cpu"
         if use_fp16:
@@ -259,7 +245,7 @@ def generate_v2v(
     seed = randomize_seed_fn(seed, randomize_seed)
     torch.manual_seed(seed)
 
-    selected_device = modules.shared.device
+    selected_device = 'cuda'
     if use_cpu:
         selected_device = "cpu"
         if use_fp16:
@@ -309,7 +295,7 @@ def generate_v2v(
     elapsed_time = time.time() - start_time
     print("LCM vid2vid inference complete! Processing", len(frames), "frames took", elapsed_time, "seconds")
     
-    save_dir = os.path.join(scripts.basedir(), "outputs/LCM-vid2vid/")
+    save_dir = '/content/outputs/LCM-vid2vid/'
     Path(save_dir).mkdir(exist_ok=True, parents=True)
     unique_id = uuid.uuid4()
     _, input_ext = os.path.splitext(video)
@@ -326,269 +312,262 @@ examples = [
     "A photo of beautiful mountain with realistic sunset and blue lake, highly detailed, masterpiece",
 ]
 
+with gr.Blocks() as lcm:
+    with gr.Tab("LCM txt2img"):
+        gr.Markdown(DESCRIPTION)
+        with gr.Row():
+            prompt = gr.Textbox(label="Prompt", 
+                                show_label=False, 
+                                lines=3, 
+                                placeholder="Prompt", 
+                                elem_classes=["prompt"])     
+            run_button = gr.Button("Run", scale=0)
+        with gr.Row():        
+            result = gr.Gallery(
+                label="Generated images", show_label=False, elem_id="gallery", grid=[2], preview=True
+            )
 
-def on_ui_tabs():
-    with gr.Blocks() as lcm:
-        with gr.Tab("LCM txt2img"):
-            gr.Markdown(DESCRIPTION)
+        with gr.Accordion("Advanced options", open=False):
+            seed = gr.Slider(
+                label="Seed",
+                minimum=0,
+                maximum=MAX_SEED,
+                step=1,
+                value=0,
+                randomize=True
+            )
+            randomize_seed = gr.Checkbox(
+                label="Randomize seed across runs", value=True)
+            use_fp16 = gr.Checkbox(
+                label="Run LCM in fp16 (for lower VRAM)", value=True)
+            use_torch_compile = gr.Checkbox(
+                label="Run LCM with torch.compile (currently not supported on Windows)", value=False)
+            use_cpu = gr.Checkbox(label="Run LCM on CPU", value=False)
             with gr.Row():
-                prompt = gr.Textbox(label="Prompt", 
-                                    show_label=False, 
-                                    lines=3, 
-                                    placeholder="Prompt", 
-                                    elem_classes=["prompt"])     
-                run_button = gr.Button("Run", scale=0)
-            with gr.Row():        
-                result = gr.Gallery(
-                    label="Generated images", show_label=False, elem_id="gallery", grid=[2], preview=True
+                width = gr.Slider(
+                    label="Width",
+                    minimum=256,
+                    maximum=MAX_IMAGE_SIZE,
+                    step=32,
+                    value=512,
                 )
-
-            with gr.Accordion("Advanced options", open=False):
-                seed = gr.Slider(
-                    label="Seed",
-                    minimum=0,
-                    maximum=MAX_SEED,
+                height = gr.Slider(
+                    label="Height",
+                    minimum=256,
+                    maximum=MAX_IMAGE_SIZE,
+                    step=32,
+                    value=512,
+                )
+            with gr.Row():
+                guidance_scale = gr.Slider(
+                    label="Guidance scale for base",
+                    minimum=2,
+                    maximum=14,
+                    step=0.1,
+                    value=8.0,
+                )
+                num_inference_steps = gr.Slider(
+                    label="Number of inference steps for base",
+                    minimum=1,
+                    maximum=8,
                     step=1,
-                    value=0,
-                    randomize=True
+                    value=4,
                 )
-                randomize_seed = gr.Checkbox(
-                    label="Randomize seed across runs", value=True)
-                use_fp16 = gr.Checkbox(
-                    label="Run LCM in fp16 (for lower VRAM)", value=True)
-                use_torch_compile = gr.Checkbox(
-                    label="Run LCM with torch.compile (currently not supported on Windows)", value=False)
-                use_cpu = gr.Checkbox(label="Run LCM on CPU", value=False)
-                with gr.Row():
-                    width = gr.Slider(
-                        label="Width",
-                        minimum=256,
-                        maximum=MAX_IMAGE_SIZE,
-                        step=32,
-                        value=512,
-                    )
-                    height = gr.Slider(
-                        label="Height",
-                        minimum=256,
-                        maximum=MAX_IMAGE_SIZE,
-                        step=32,
-                        value=512,
-                    )
-                with gr.Row():
-                    guidance_scale = gr.Slider(
-                        label="Guidance scale for base",
-                        minimum=2,
-                        maximum=14,
-                        step=0.1,
-                        value=8.0,
-                    )
-                    num_inference_steps = gr.Slider(
-                        label="Number of inference steps for base",
-                        minimum=1,
-                        maximum=8,
-                        step=1,
-                        value=4,
-                    )
-                with gr.Row():
-                    num_images = gr.Slider(
-                        label="Number of images (batch count)",
-                        minimum=1,
-                        maximum=100,
-                        step=1,
-                        value=4,
-                    )
+            with gr.Row():
+                num_images = gr.Slider(
+                    label="Number of images (batch count)",
+                    minimum=1,
+                    maximum=100,
+                    step=1,
+                    value=4,
+                )
 
-            gr.Examples(
-                examples=examples,
-                inputs=prompt,
-                outputs=result,
-                fn=generate
+        gr.Examples(
+            examples=examples,
+            inputs=prompt,
+            outputs=result,
+            fn=generate
+        )
+
+        run_button.click(
+            fn=generate,
+            inputs=[
+                prompt,
+                seed,
+                width,
+                height,
+                guidance_scale,
+                num_inference_steps,
+                num_images,
+                randomize_seed,
+                use_fp16,
+                use_torch_compile,
+                use_cpu
+            ],
+            outputs=[result, seed],
+        )
+
+    with gr.Tab("LCM img2img"):
+        with gr.Row():
+            prompt = gr.Textbox(label="Prompt", 
+                                show_label=False, 
+                                lines=3, 
+                                placeholder="Prompt", 
+                                elem_classes=["prompt"])       
+            run_i2i_button = gr.Button("Run", scale=0)
+        with gr.Row():      
+            image_input = gr.Image(label="Upload your Image", type="pil")
+            result = gr.Gallery(
+                label="Generated images", 
+                show_label=False, 
+                elem_id="gallery", 
+                preview=True
             )
 
-            run_button.click(
-                fn=generate,
-                inputs=[
-                    prompt,
-                    seed,
-                    width,
-                    height,
-                    guidance_scale,
-                    num_inference_steps,
-                    num_images,
-                    randomize_seed,
-                    use_fp16,
-                    use_torch_compile,
-                    use_cpu
-                ],
-                outputs=[result, seed],
+        with gr.Accordion("Advanced options", open=False):
+            seed = gr.Slider(
+                label="Seed",
+                minimum=0,
+                maximum=MAX_SEED,
+                step=1,
+                value=0,
+                randomize=True
             )
+            randomize_seed = gr.Checkbox(
+                label="Randomize seed across runs", value=True)
+            use_fp16 = gr.Checkbox(
+                label="Run LCM in fp16 (for lower VRAM)", value=True)
+            use_torch_compile = gr.Checkbox(
+                label="Run LCM with torch.compile (currently not supported on Windows)", value=False)
+            use_cpu = gr.Checkbox(label="Run LCM on CPU", value=False)
+            with gr.Row():
+                guidance_scale = gr.Slider(
+                    label="Guidance scale for base",
+                    minimum=2,
+                    maximum=14,
+                    step=0.1,
+                    value=8.0,
+                )
+                num_inference_steps = gr.Slider(
+                    label="Number of inference steps for base",
+                    minimum=1,
+                    maximum=8,
+                    step=1,
+                    value=4,
+                )
+            with gr.Row():
+                num_images = gr.Slider(
+                    label="Number of images (batch count)",
+                    minimum=1,
+                    maximum=100,
+                    step=1,
+                    value=4,
+                )
+                strength = gr.Slider(
+                    label="Prompt Strength",
+                    minimum=0.1,
+                    maximum=1.0,
+                    step=0.1,
+                    value=0.5,
+                )
+
+        run_i2i_button.click(
+            fn=generate_i2i,
+            inputs=[
+                prompt,
+                image_input,
+                strength,
+                seed,
+                guidance_scale,
+                num_inference_steps,
+                num_images,
+                randomize_seed,
+                use_fp16,
+                use_torch_compile,
+                use_cpu
+            ],
+            outputs=[result, seed],
+        )
     
-        with gr.Tab("LCM img2img"):
-            with gr.Row():
-                prompt = gr.Textbox(label="Prompt", 
-                                    show_label=False, 
-                                    lines=3, 
-                                    placeholder="Prompt", 
-                                    elem_classes=["prompt"])       
-                run_i2i_button = gr.Button("Run", scale=0)
-            with gr.Row():      
-                image_input = gr.Image(label="Upload your Image", type="pil")
-                result = gr.Gallery(
-                    label="Generated images", 
-                    show_label=False, 
-                    elem_id="gallery", 
-                    preview=True
-                )
+    
+    with gr.Tab("LCM vid2vid"):
+        with gr.Row():
+            prompt = gr.Textbox(label="Prompt", 
+                                show_label=False, 
+                                lines=3, 
+                                placeholder="Prompt", 
+                                elem_classes=["prompt"])       
+            run_v2v_button = gr.Button("Run", scale=0)
+        with gr.Row():
+            video_input = gr.Video(label="Source Video")
+            video_output = gr.Video(label="Generated Video")
 
-            with gr.Accordion("Advanced options", open=False):
-                seed = gr.Slider(
-                    label="Seed",
-                    minimum=0,
-                    maximum=MAX_SEED,
-                    step=1,
-                    value=0,
-                    randomize=True
-                )
-                randomize_seed = gr.Checkbox(
-                    label="Randomize seed across runs", value=True)
-                use_fp16 = gr.Checkbox(
-                    label="Run LCM in fp16 (for lower VRAM)", value=True)
-                use_torch_compile = gr.Checkbox(
-                    label="Run LCM with torch.compile (currently not supported on Windows)", value=False)
-                use_cpu = gr.Checkbox(label="Run LCM on CPU", value=False)
-                with gr.Row():
-                    guidance_scale = gr.Slider(
-                        label="Guidance scale for base",
-                        minimum=2,
-                        maximum=14,
-                        step=0.1,
-                        value=8.0,
-                    )
-                    num_inference_steps = gr.Slider(
-                        label="Number of inference steps for base",
-                        minimum=1,
-                        maximum=8,
-                        step=1,
-                        value=4,
-                    )
-                with gr.Row():
-                    num_images = gr.Slider(
-                        label="Number of images (batch count)",
-                        minimum=1,
-                        maximum=100,
-                        step=1,
-                        value=4,
-                    )
-                    strength = gr.Slider(
-                        label="Prompt Strength",
-                        minimum=0.1,
-                        maximum=1.0,
-                        step=0.1,
-                        value=0.5,
-                    )
-
-            run_i2i_button.click(
-                fn=generate_i2i,
-                inputs=[
-                    prompt,
-                    image_input,
-                    strength,
-                    seed,
-                    guidance_scale,
-                    num_inference_steps,
-                    num_images,
-                    randomize_seed,
-                    use_fp16,
-                    use_torch_compile,
-                    use_cpu
-                ],
-                outputs=[result, seed],
+        with gr.Accordion("Advanced options", open=False):
+            seed = gr.Slider(
+                label="Seed",
+                minimum=0,
+                maximum=MAX_SEED,
+                step=1,
+                value=0,
+                randomize=True
             )
-        
-        
-        with gr.Tab("LCM vid2vid"):
+            randomize_seed = gr.Checkbox(
+                label="Randomize seed across runs", value=True)
+            use_fp16 = gr.Checkbox(
+                label="Run LCM in fp16 (for lower VRAM)", value=True)
+            use_torch_compile = gr.Checkbox(
+                label="Run LCM with torch.compile (currently not supported on Windows)", value=False)
+            use_cpu = gr.Checkbox(label="Run LCM on CPU", value=False)
+            save_frames = gr.Checkbox(label="Save intermediate frames", value=False)                   
             with gr.Row():
-                prompt = gr.Textbox(label="Prompt", 
-                                    show_label=False, 
-                                    lines=3, 
-                                    placeholder="Prompt", 
-                                    elem_classes=["prompt"])       
-                run_v2v_button = gr.Button("Run", scale=0)
-            with gr.Row():
-                video_input = gr.Video(label="Source Video")
-                video_output = gr.Video(label="Generated Video")
-
-            with gr.Accordion("Advanced options", open=False):
-                seed = gr.Slider(
-                    label="Seed",
-                    minimum=0,
-                    maximum=MAX_SEED,
-                    step=1,
-                    value=0,
-                    randomize=True
+                guidance_scale = gr.Slider(
+                    label="Guidance scale for base",
+                    minimum=2,
+                    maximum=14,
+                    step=0.1,
+                    value=8.0,
                 )
-                randomize_seed = gr.Checkbox(
-                    label="Randomize seed across runs", value=True)
-                use_fp16 = gr.Checkbox(
-                    label="Run LCM in fp16 (for lower VRAM)", value=True)
-                use_torch_compile = gr.Checkbox(
-                    label="Run LCM with torch.compile (currently not supported on Windows)", value=False)
-                use_cpu = gr.Checkbox(label="Run LCM on CPU", value=False)
-                save_frames = gr.Checkbox(label="Save intermediate frames", value=False)                   
-                with gr.Row():
-                    guidance_scale = gr.Slider(
-                        label="Guidance scale for base",
-                        minimum=2,
-                        maximum=14,
-                        step=0.1,
-                        value=8.0,
-                    )
-                    num_inference_steps = gr.Slider(
-                        label="Number of inference steps for base",
-                        minimum=1,
-                        maximum=8,
-                        step=1,
-                        value=4,
-                    )
-                with gr.Row():
-                    fps = gr.Slider(
-                        label="Output FPS",
-                        minimum=1,
-                        maximum=200,
-                        step=1,
-                        value=10,
-                    )
-                    strength = gr.Slider(
-                        label="Prompt Strength",
-                        minimum=0.1,
-                        maximum=1.0,
-                        step=0.05,
-                        value=0.5,
-                    )
+                num_inference_steps = gr.Slider(
+                    label="Number of inference steps for base",
+                    minimum=1,
+                    maximum=8,
+                    step=1,
+                    value=4,
+                )
+            with gr.Row():
+                fps = gr.Slider(
+                    label="Output FPS",
+                    minimum=1,
+                    maximum=200,
+                    step=1,
+                    value=10,
+                )
+                strength = gr.Slider(
+                    label="Prompt Strength",
+                    minimum=0.1,
+                    maximum=1.0,
+                    step=0.05,
+                    value=0.5,
+                )
 
-            run_v2v_button.click(
-                fn=generate_v2v,
-                inputs=[
-                    prompt,
-                    video_input,
-                    strength,
-                    seed,
-                    guidance_scale,
-                    num_inference_steps,
-                    randomize_seed,
-                    use_fp16,
-                    use_torch_compile,
-                    use_cpu,
-                    fps,
-                    save_frames
-                ],
-                outputs=video_output,
-            )
-        
-        
+        run_v2v_button.click(
+            fn=generate_v2v,
+            inputs=[
+                prompt,
+                video_input,
+                strength,
+                seed,
+                guidance_scale,
+                num_inference_steps,
+                randomize_seed,
+                use_fp16,
+                use_torch_compile,
+                use_cpu,
+                fps,
+                save_frames
+            ],
+            outputs=video_output,
+        )
 
-    return [(lcm, "LCM", "lcm")]
-
-
-
-script_callbacks.on_ui_tabs(on_ui_tabs)
+if __name__ == "__main__":
+    lcm.queue().launch(share=True)
