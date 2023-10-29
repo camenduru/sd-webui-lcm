@@ -33,7 +33,7 @@ def randomize_seed_fn(seed: int, randomize_seed: bool) -> int:
 
 
 def save_image(img, metadata: dict):
-    save_dir = '/content/outputs/LCM-txt2img/'
+    save_dir = '/home/xlab-app-center/outputs/LCM-txt2img/'
     Path(save_dir).mkdir(exist_ok=True, parents=True)
     seed = metadata["seed"]
     unique_id = uuid.uuid4()
@@ -295,7 +295,7 @@ def generate_v2v(
     elapsed_time = time.time() - start_time
     print("LCM vid2vid inference complete! Processing", len(frames), "frames took", elapsed_time, "seconds")
     
-    save_dir = '/content/outputs/LCM-vid2vid/'
+    save_dir = '/home/xlab-app-center/outputs/LCM-vid2vid/'
     Path(save_dir).mkdir(exist_ok=True, parents=True)
     unique_id = uuid.uuid4()
     _, input_ext = os.path.splitext(video)
@@ -570,4 +570,4 @@ with gr.Blocks() as lcm:
         )
 
 if __name__ == "__main__":
-    lcm.queue().launch(share=True)
+    lcm.queue().launch(share=False, server_port=7861)
