@@ -81,9 +81,9 @@ def generate(
             print("LCM warning: running on CPU, overrode FP16 with FP32")
 
     scheduler = LCMScheduler.from_pretrained(
-        "SimianLuo/LCM_Dreamshaper_v7", subfolder="scheduler")
+        "SimianLuo/LCM_Dreamshaper_v7", revision="fb9c5d167af11fd84454ae6493878b10bb63b067", subfolder="scheduler")
     pipe = LatentConsistencyModelPipeline.from_pretrained(
-        "SimianLuo/LCM_Dreamshaper_v7", scheduler = scheduler, safety_checker = None)
+        "SimianLuo/LCM_Dreamshaper_v7", revision="fb9c5d167af11fd84454ae6493878b10bb63b067", scheduler = scheduler, safety_checker = None)
 
     if use_fp16:
         pipe.to(torch_device=selected_device, torch_dtype=torch.float16)
@@ -141,7 +141,7 @@ def generate_i2i(
             print("LCM warning: running on CPU, overrode FP16 with FP32")
 
     pipe = LatentConsistencyModelImg2ImgPipeline.from_pretrained(
-        "SimianLuo/LCM_Dreamshaper_v7", safety_checker = None)
+        "SimianLuo/LCM_Dreamshaper_v7", revision="fb9c5d167af11fd84454ae6493878b10bb63b067", safety_checker = None)
 
     if use_fp16:
         pipe.to(torch_device=selected_device, torch_dtype=torch.float16)
@@ -253,7 +253,7 @@ def generate_v2v(
             print("LCM warning: running on CPU, overrode FP16 with FP32")
 
     pipe = LatentConsistencyModelImg2ImgPipeline.from_pretrained(
-        "SimianLuo/LCM_Dreamshaper_v7", safety_checker = None)
+        "SimianLuo/LCM_Dreamshaper_v7", revision="fb9c5d167af11fd84454ae6493878b10bb63b067", safety_checker = None)
 
     if use_fp16:
         pipe.to(torch_device=selected_device, torch_dtype=torch.float16)
