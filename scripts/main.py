@@ -19,7 +19,7 @@ import torch
 
 
 DESCRIPTION = '''# Latent Consistency Model
-Running [LCM_Dreamshaper_v7](https://huggingface.co/SimianLuo/LCM_Dreamshaper_v7) | [Project Page](https://latent-consistency-models.github.io) | [Extension Page](https://github.com/0xbitches/sd-webui-lcm)
+Running [SDXL](https://huggingface.co/ckpt/lcm-sdxl) | [Project Page](https://latent-consistency-models.github.io) | [Extension Page](https://github.com/0xbitches/sd-webui-lcm)
 '''
 
 MAX_SEED = np.iinfo(np.int32).max
@@ -81,9 +81,9 @@ def generate(
             print("LCM warning: running on CPU, overrode FP16 with FP32")
 
     scheduler = LCMScheduler.from_pretrained(
-        "SimianLuo/LCM_Dreamshaper_v7", revision="fb9c5d167af11fd84454ae6493878b10bb63b067", subfolder="scheduler")
+        "ckpt/lcm-sdxl", subfolder="scheduler")
     pipe = LatentConsistencyModelPipeline.from_pretrained(
-        "SimianLuo/LCM_Dreamshaper_v7", revision="fb9c5d167af11fd84454ae6493878b10bb63b067", scheduler = scheduler, safety_checker = None)
+        "ckpt/lcm-sdxl", scheduler = scheduler, safety_checker = None)
 
     if use_fp16:
         pipe.to(torch_device=selected_device, torch_dtype=torch.float16)
@@ -141,7 +141,7 @@ def generate_i2i(
             print("LCM warning: running on CPU, overrode FP16 with FP32")
 
     pipe = LatentConsistencyModelImg2ImgPipeline.from_pretrained(
-        "SimianLuo/LCM_Dreamshaper_v7", revision="fb9c5d167af11fd84454ae6493878b10bb63b067", safety_checker = None)
+        "ckpt/lcm-sdxl", safety_checker = None)
 
     if use_fp16:
         pipe.to(torch_device=selected_device, torch_dtype=torch.float16)
@@ -253,7 +253,7 @@ def generate_v2v(
             print("LCM warning: running on CPU, overrode FP16 with FP32")
 
     pipe = LatentConsistencyModelImg2ImgPipeline.from_pretrained(
-        "SimianLuo/LCM_Dreamshaper_v7", revision="fb9c5d167af11fd84454ae6493878b10bb63b067", safety_checker = None)
+        "ckpt/lcm-sdxl", safety_checker = None)
 
     if use_fp16:
         pipe.to(torch_device=selected_device, torch_dtype=torch.float16)

@@ -4,7 +4,7 @@
 
 This extension aims to integrate [Latent Consistency Model (LCM)](https://latent-consistency-models.github.io/) into [AUTOMATIC1111 Stable Diffusion WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui).
 
-Note that LCMs are a completely different class of models than Stable Diffusion, and the only available checkpoint currently is [LCM_Dreamshaper_v7](https://huggingface.co/SimianLuo/LCM_Dreamshaper_v7).
+Note that LCMs are a completely different class of models than Stable Diffusion, and the only available checkpoint currently is [SDXL](https://huggingface.co/ckpt/lcm-sdxl).
 
 **This is a very barebone implementation written in an hour, so any PRs are welcome.**
 
